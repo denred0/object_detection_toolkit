@@ -86,14 +86,17 @@ def mean_average_precision(
         recalls = TP_cumsum / (total_true_bboxes + epsilon)
         precisions = TP_cumsum / (TP_cumsum + FP_cumsum + epsilon)
         precisions = np.concatenate((np.ones([1]), precisions))
+        precisions[1:-1] = precisions[2:]
         recalls = np.concatenate((np.zeros([1]), recalls))
         # np.trapz for numerical integration
+        # находит площадь под треугольниками, не достраивая до прямоугольников
+        # чтобы была площадь под прямоугольником надо precisions[1:-1] = precisions[2:]
         average_precisions.append(np.trapz(precisions, recalls))
 
     return round(sum(average_precisions) / len(average_precisions), 4)
 
 
 if __name__ == "__main__":
-    pred_boxes = [[0, 0.9, 0, 0, 50, 50], [0, 0.8, 200, 200, 215, 215]]
+    pred_boxes = [[0, 0.9, 0, 0, 100, 100], [0, 0.8, 200, 200, 220, 220]]
     true_boxes = [[0, 0, 0, 100, 100], [0, 200, 200, 220, 220]]
     print(mean_average_precision(pred_boxes, true_boxes))
