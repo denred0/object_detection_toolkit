@@ -1,4 +1,5 @@
-import torch
+# source https://github.com/aladdinpersson/Machine-Learning-Collection/blob/master/ML/Pytorch/object_detection/metrics/mean_avg_precision.py
+import numpy as np
 from iou import intersection_over_union_box
 
 
@@ -41,12 +42,12 @@ def mean_average_precision(
             if true_box[0] == c:
                 ground_truths.append(true_box)
 
-        amount_bboxes = torch.zeros(len(ground_truths))
+        amount_bboxes = np.zeros(len(ground_truths))
 
         # sort by box probabilities which is index 2
         detections.sort(key=lambda x: x[1], reverse=True)
-        TP = torch.zeros((len(detections)))
-        FP = torch.zeros((len(detections)))
+        TP = np.zeros((len(detections)))
+        FP = np.zeros((len(detections)))
         total_true_bboxes = len(ground_truths)
 
         # If none exists for this class then we can safely skip
@@ -80,16 +81,16 @@ def mean_average_precision(
             else:
                 FP[detection_idx] = 1
 
-        TP_cumsum = torch.cumsum(TP, dim=0)
-        FP_cumsum = torch.cumsum(FP, dim=0)
+        TP_cumsum = np.cumsum(TP, axis=0)
+        FP_cumsum = np.cumsum(FP, axis=0)
         recalls = TP_cumsum / (total_true_bboxes + epsilon)
         precisions = TP_cumsum / (TP_cumsum + FP_cumsum + epsilon)
-        precisions = torch.cat((torch.tensor([1]), precisions))
-        recalls = torch.cat((torch.tensor([0]), recalls))
-        # torch.trapz for numerical integration
-        average_precisions.append(torch.trapz(precisions, recalls))
+        precisions = np.concatenate((np.ones([1]), precisions))
+        recalls = np.concatenate((np.zeros([1]), recalls))
+        # np.trapz for numerical integration
+        average_precisions.append(np.trapz(precisions, recalls))
 
-    return sum(average_precisions) / len(average_precisions)
+    return round(sum(average_precisions) / len(average_precisions), 4)
 
 
 if __name__ == "__main__":
