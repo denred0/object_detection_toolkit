@@ -10,10 +10,10 @@ from typing import List
 from pathlib import Path
 
 
-def get_all_files_in_folder(folder, types):
+def get_all_files_in_folder(folder: str, types):
     files_grabbed = []
     for t in types:
-        files_grabbed.extend(folder.rglob(t))
+        files_grabbed.extend(Path(folder).rglob(t))
     files_grabbed = sorted(files_grabbed, key=lambda x: x)
     return files_grabbed
 
@@ -26,7 +26,7 @@ def recreate_folders(root_dir: Path, folders_list: List) -> None:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
 
-def recreate_one_folder(root_dir: str) -> None:
+def recreate_folder(root_dir: str) -> None:
     output_dir = Path(root_dir)
     if output_dir.exists() and output_dir.is_dir():
         shutil.rmtree(output_dir)
@@ -84,7 +84,7 @@ def BrightnessAndContrastAuto(im_source, clipHistPercent=0):
 
 def improve_brightness():
     output_foldet = "data/improve_brightness/output"
-    recreate_one_folder(output_foldet)
+    recreate_folder(output_foldet)
 
     images = get_all_files_in_folder(Path("data/improve_brightness/input"), ["*.jpg"])
 
@@ -94,9 +94,19 @@ def improve_brightness():
         cv2.imwrite(os.path.join(output_foldet, im.name), img_edit)
 
 
+def generate_train_test(data_dir, split):
+    images = get_all_files_in_folder(data_dir, ['*.png'])
+
+    with open('data/create_txt_lists/' + split + '.txt', "w") as outfile:
+        for image in images:
+            outfile.write(split + '/' + image.name)
+            outfile.write("\n")
+        outfile.close()
+
+
 def improve_brightness2():
     output_foldet = "data/improve_brightness/output"
-    recreate_one_folder(output_foldet)
+    recreate_folder(output_foldet)
 
     images = get_all_files_in_folder(Path("data/improve_brightness/input"), ["*.jpg"])
 

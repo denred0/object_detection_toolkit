@@ -93,7 +93,9 @@ def mean_average_precision(
         # чтобы была площадь под прямоугольником надо precisions[1:-1] = precisions[2:]
         average_precisions.append(np.trapz(precisions, recalls))
 
-    return round(sum(average_precisions) / len(average_precisions), 4)
+    return round(sum(average_precisions) / len(average_precisions), 4), \
+           round(np.mean(precisions), 4),\
+           round(np.mean(recalls), 4)
 
 
 if __name__ == "__main__":
