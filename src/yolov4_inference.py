@@ -6,7 +6,7 @@ import numpy as np
 
 from tqdm import tqdm
 from pathlib import Path
-from utils import get_all_files_in_folder, recreate_folder
+from utils import get_all_files_in_folder, recreate_folder, plot_one_box
 
 from my_darknet import load_network, detect_image
 from map import mean_average_precision
@@ -24,7 +24,8 @@ def inference(source_images: str,
               hier_thresh=0.45,
               nms_coeff=0.5,
               images_ext='jpg',
-              map_calc=False) -> None:
+              map_calc=False,
+              verbose=False) -> [float, float, float]:
     #
     with open(class_names_path) as file:
         classes = file.readlines()
@@ -110,9 +111,9 @@ def inference(source_images: str,
                 recall_images.append(0)
             else:
                 map_image, precision_image, recall_image = mean_average_precision(pred_boxes=detections_result,
-                                                   true_boxes=detections_gt,
-                                                   num_classes=len(classes),
-                                                   iou_threshold=0.5)
+                                                                                  true_boxes=detections_gt,
+                                                                                  num_classes=len(classes),
+                                                                                  iou_threshold=0.5)
                 map_images.append(map_image)
                 precision_images.append(precision_image)
                 recall_images.append(recall_image)
@@ -135,35 +136,22 @@ def inference(source_images: str,
 
         cv2.imwrite(str(Path(output_images_vis_dir).joinpath(im.name)), img_orig)
 
-    print(f"Images count: {len(images)}")
-    print(f"mAP: {round(np.mean(map_images), 4)}")
+    if verbose:
+        print(f"Images count: {len(images)}")
+        print(f"mAP: {round(np.mean(map_images), 4)}")
 
-    # precision - не находим лишнее (уменьшаем FP)
-    print(f"Precision: {round(np.mean(precision_images), 4)}")
+        # precision - не находим лишнее (уменьшаем FP)
+        print(f"Precision: {round(np.mean(precision_images), 4)}")
 
-    # recall - находим все объекты (уменьшаем FN)
-    print(f"Recall: {round(np.mean(recall_images), 4)}")
-    # print(map_images)
+        # recall - находим все объекты (уменьшаем FN)
+        print(f"Recall: {round(np.mean(recall_images), 4)}")
+        # print(map_images)
 
-
-def plot_one_box(im, box, label=None, color=(255, 255, 0), line_thickness=1):
-    c1 = (box[0], box[1])
-    c2 = (box[2], box[3])
-
-    tl = line_thickness or round(0.001 * (im.shape[0] + im.shape[1]) / 2) + 1  # line/font thickness
-    im = cv2.rectangle(im, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
-    if label:
-        tf = max(tl - 1, 1)  # font thickness
-        t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-        c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
-        im = cv2.rectangle(im, c1, c2, color, -1, cv2.LINE_AA)  # filled
-        im = cv2.putText(im, label, (c1[0], c1[1] - 2), 0, tl / 3, [255, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
-
-    return im
+    return round(np.mean(map_images), 4), round(np.mean(precision_images), 4), round(np.mean(recall_images), 4)
 
 
 if __name__ == '__main__':
-    project = "podrydchiki"
+    project = "barrier_reef"
 
     input_images = f"data/yolo4_inference/{project}/input/images"
     input_annot = f"data/yolo4_inference/{project}/input/annot_gt"
@@ -172,17 +160,15 @@ if __name__ == '__main__':
     weight_path = f"data/yolo4_inference/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
     meta_path = f"data/yolo4_inference/{project}/input/cfg/obj.data"
     class_names_path = f"data/yolo4_inference/{project}/input/cfg/obj.names"
-    threshold = 0.7
+    threshold = 0.2
     hier_thresh = 0.3
-    nms_coeff = 0.3
-    images_ext = 'jpg'
+    nms_coeff = 0.5
+    images_ext = 'png'
 
     output_annot_dir = f"data/yolo4_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
     output_images_vis_dir = f"data/yolo4_inference/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
-
-    map_calc = True
 
     inference(input_images,
               input_annot,
@@ -195,4 +181,5 @@ if __name__ == '__main__':
               hier_thresh,
               nms_coeff,
               images_ext,
-              map_calc)
+              map_calc=True,
+              verbose=True)
