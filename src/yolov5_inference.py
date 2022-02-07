@@ -1,38 +1,38 @@
-import os
-import sys
-import cv2
 import time
 import numpy as np
+import cv2
+import torch
 
-from tqdm import tqdm
 from pathlib import Path
-from my_utils import get_all_files_in_folder, recreate_folder, plot_one_box
+from typing import List
+from tqdm import tqdm
 
-from my_darknet import load_network, detect_image
+from my_utils import recreate_folder, get_all_files_in_folder, plot_one_box
 from map import mean_average_precision
 
 
-def inference(source_images: str,
-              input_annot: str,
-              output_annot_dir: str,
-              output_images_vis_dir: str,
-              config_path: str,
-              weight_path: str,
-              meta_path: str,
-              class_names_path: str,
-              threshold=0.5,
-              hier_thresh=0.45,
-              nms_coeff=0.5,
-              images_ext='jpg',
-              map_calc=False,
-              verbose=False) -> [float, float, float]:
+def inference_yolov5(input_images: str,
+                     input_annot: str,
+                     image_ext: str,
+                     output_annot_dir: str,
+                     output_images_vis_dir: str,
+                     model_path: str,
+                     class_names_path: str,
+                     classes_inds: List,
+                     threshold=0.5,
+                     nms=0.5,
+                     map_calc=True,
+                     verbose=True) -> [float, float, float]:
     #
     with open(class_names_path) as file:
         classes = file.readlines()
 
-    net_main, class_names, colors = load_network(config_path, meta_path, weight_path)
+    model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
+    model.conf = threshold
+    model.iou = nms
+    model.classes = classes_inds
 
-    images = get_all_files_in_folder(source_images, [f"*.{images_ext}"])
+    images = get_all_files_in_folder(input_images, [f"*.{image_ext}"])
 
     map_images = []
     precision_images = []
@@ -45,50 +45,35 @@ def inference(source_images: str,
         img = cv2.imread(str(im), cv2.IMREAD_COLOR)
         img_orig = img.copy()
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
         h, w = img.shape[:2]
+
         start = time.time()
-        detections = detect_image(net_main,
-                                  class_names,
-                                  img,
-                                  thresh=threshold,
-                                  hier_thresh=hier_thresh,
-                                  nms=nms_coeff)
+        results = model(img)
         detection_time += time.time() - start
+        results_list = results.pandas().xyxy[0].values.tolist()
 
         detections_result = []
 
-        detections_valid = [d for d in detections if float(d[1]) / 100 > threshold]
+        detections_valid = [d for d in results_list if float(d[4]) > threshold]
 
-        for i, detection in enumerate(detections_valid):
+        for res in detections_valid:
+            (xmin, ymin) = (res[0], res[1])
+            (xmax, ymax) = (res[2], res[3])
+            width = xmax - xmin
+            height = ymax - ymin
 
-            current_class = detection[0]
-            current_thresh = float(detection[1])
-            current_coords = [float(x) for x in detection[2]]
-
-            xmin = float(current_coords[0] - current_coords[2] / 2)
-            ymin = float(current_coords[1] - current_coords[3] / 2)
-            xmax = float(xmin + current_coords[2])
-            ymax = float(ymin + current_coords[3])
-
-            xmin = 0 if xmin < 0 else xmin
-            xmax = w if xmax > w else xmax
-
-            ymin = 0 if ymin < 0 else ymin
-            ymax = h if ymax > h else ymax
-
-            x_center_norm = float(current_coords[0]) / w
-            y_center_norm = float(current_coords[1]) / h
-            w_norm = float(current_coords[2]) / w
-            h_norm = float(current_coords[3]) / h
+            x_center_norm = float((xmax - xmin) / 2 + xmin) / w
+            y_center_norm = float((ymax - ymin) / 2 + ymin) / h
+            w_norm = float(width) / w
+            h_norm = float(height) / h
 
             if w_norm > 1: w_norm = 1.0
             if h_norm > 1: h_norm = 1.0
 
             detections_result.append(
                 [
-                    classes.index(current_class),
-                    round(current_thresh / 100, 2),
+                    res[5],
+                    round(res[4], 2),
                     x_center_norm,
                     y_center_norm,
                     w_norm,
@@ -96,7 +81,8 @@ def inference(source_images: str,
                 ])
 
             img_orig = plot_one_box(img_orig, [int(xmin), int(ymin), int(xmax), int(ymax)],
-                                    str(current_class + " " + str(round(current_thresh / 100, 2))), color=(255, 255, 0))
+                                    str(res[6] + " " + str(round(res[4], 2))),
+                                    color=(255, 255, 0))
 
         if map_calc:
             with open(Path(input_annot).joinpath(im.stem + ".txt")) as file:
@@ -159,33 +145,30 @@ def inference(source_images: str,
 if __name__ == '__main__':
     project = "podrydchiki"
 
-    input_images = f"data/yolov4_inference/{project}/input/images"
+    input_images = f"data/yolov5_inference/{project}/input/images"
     input_annot = f"data/yolov4_inference/{project}/input/annot_gt"
-    images_ext = 'jpg'
+    image_ext = "jpg"
 
-    config_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom.cfg"
-    weight_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
-    meta_path = f"data/yolov4_inference/{project}/input/cfg/obj.data"
-    class_names_path = f"data/yolov4_inference/{project}/input/cfg/obj.names"
-    threshold = 0.7
-    hier_thresh = 0.4
-    nms_coeff = 0.4
+    model_path = "data/yolov5_inference/podrydchiki/input/cfg/best.pt"
+    class_names_path = "data/yolov5_inference/podrydchiki/input/cfg/obj.names"
+    threshold = 0.70
+    nms = 0.4
+    classes_inds = [0]
 
     output_annot_dir = f"data/yolov4_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
     output_images_vis_dir = f"data/yolov4_inference/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
 
-    inference(input_images,
-              input_annot,
-              output_annot_dir,
-              output_images_vis_dir,
-              config_path, weight_path,
-              meta_path,
-              class_names_path,
-              threshold,
-              hier_thresh,
-              nms_coeff,
-              images_ext,
-              map_calc=True,
-              verbose=True)
+    inference_yolov5(input_images,
+                     input_annot,
+                     image_ext,
+                     output_annot_dir,
+                     output_images_vis_dir,
+                     model_path,
+                     class_names_path,
+                     classes_inds,
+                     threshold,
+                     nms,
+                     map_calc=True,
+                     verbose=True)

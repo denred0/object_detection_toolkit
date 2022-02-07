@@ -38,10 +38,10 @@ best_recall = 0.0
 best_recall_values = [0, 0, 0, 0, 0]
 
 exp_number = 0
-# thresholds = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
-# nmses = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-thresholds = [0.5]
-nmses = [0.4]
+thresholds = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+nmses = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+# thresholds = [0.5]
+# nmses = [0.4]
 
 for th in thresholds:
     for nms in nmses:
