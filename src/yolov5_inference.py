@@ -151,8 +151,8 @@ if __name__ == '__main__':
 
     model_path = "data/yolov5_inference/podrydchiki/input/cfg/best.pt"
     class_names_path = "data/yolov5_inference/podrydchiki/input/cfg/obj.names"
-    threshold = 0.70
-    nms = 0.4
+    threshold = 0.50
+    nms = 0.5
     classes_inds = [0]
 
     output_annot_dir = f"data/yolov4_inference/{project}/output/annot_pred"
