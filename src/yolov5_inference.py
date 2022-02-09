@@ -11,8 +11,7 @@ from my_utils import recreate_folder, get_all_files_in_folder, plot_one_box
 from map import mean_average_precision
 
 
-def inference_yolov5(input_images: str,
-                     input_annot: str,
+def inference_yolov5(input_gt: str,
                      image_ext: str,
                      output_annot_dir: str,
                      output_images_vis_dir: str,
@@ -26,13 +25,14 @@ def inference_yolov5(input_images: str,
     #
     with open(class_names_path) as file:
         classes = file.readlines()
+        classes = [d.replace("\n", "") for d in classes]
 
     model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
     model.conf = threshold
     model.iou = nms
     model.classes = classes_inds
 
-    images = get_all_files_in_folder(input_images, [f"*.{image_ext}"])
+    images = get_all_files_in_folder(input_gt, [f"*.{image_ext}"])
 
     map_images = []
     precision_images = []
@@ -85,7 +85,7 @@ def inference_yolov5(input_images: str,
                                     color=(255, 255, 0))
 
         if map_calc:
-            with open(Path(input_annot).joinpath(im.stem + ".txt")) as file:
+            with open(Path(input_gt).joinpath(im.stem + ".txt")) as file:
                 detections_gt = file.readlines()
                 detections_gt = [d.replace("\n", "") for d in detections_gt]
                 detections_gt = [d.split() for d in detections_gt]
@@ -143,25 +143,24 @@ def inference_yolov5(input_images: str,
 
 
 if __name__ == '__main__':
-    project = "podrydchiki"
+    project = "podrydchiki/attributes"
 
-    input_images = f"data/yolov5_inference/{project}/input/images"
-    input_annot = f"data/yolov4_inference/{project}/input/annot_gt"
+    input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    model_path = "data/yolov5_inference/podrydchiki/input/cfg/best.pt"
-    class_names_path = "data/yolov5_inference/podrydchiki/input/cfg/obj.names"
-    threshold = 0.50
-    nms = 0.5
+    model_path = f"data/yolov5_inference/{project}/input/cfg/best.pt"
+    class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
+    threshold = 0.7
+    nms = 0.3
+    # classes_inds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     classes_inds = [0]
 
-    output_annot_dir = f"data/yolov4_inference/{project}/output/annot_pred"
+    output_annot_dir = f"data/yolov5_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
-    output_images_vis_dir = f"data/yolov4_inference/{project}/output/images_vis"
+    output_images_vis_dir = f"data/yolov5_inference/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
 
-    inference_yolov5(input_images,
-                     input_annot,
+    inference_yolov5(input_gt,
                      image_ext,
                      output_annot_dir,
                      output_images_vis_dir,

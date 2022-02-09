@@ -12,8 +12,7 @@ from my_darknet import load_network, detect_image
 from map import mean_average_precision
 
 
-def inference(source_images: str,
-              input_annot: str,
+def inference(input_gt: str,
               output_annot_dir: str,
               output_images_vis_dir: str,
               config_path: str,
@@ -29,10 +28,11 @@ def inference(source_images: str,
     #
     with open(class_names_path) as file:
         classes = file.readlines()
+        classes = [d.replace("\n", "") for d in classes]
 
     net_main, class_names, colors = load_network(config_path, meta_path, weight_path)
 
-    images = get_all_files_in_folder(source_images, [f"*.{images_ext}"])
+    images = get_all_files_in_folder(input_gt, [f"*.{images_ext}"])
 
     map_images = []
     precision_images = []
@@ -99,7 +99,7 @@ def inference(source_images: str,
                                     str(current_class + " " + str(round(current_thresh / 100, 2))), color=(255, 255, 0))
 
         if map_calc:
-            with open(Path(input_annot).joinpath(im.stem + ".txt")) as file:
+            with open(Path(input_gt).joinpath(im.stem + ".txt")) as file:
                 detections_gt = file.readlines()
                 detections_gt = [d.replace("\n", "") for d in detections_gt]
                 detections_gt = [d.split() for d in detections_gt]
@@ -157,27 +157,25 @@ def inference(source_images: str,
 
 
 if __name__ == '__main__':
-    project = "podrydchiki"
+    project = "podrydchiki/attributes"
 
-    input_images = f"data/yolov4_inference/{project}/input/images"
-    input_annot = f"data/yolov4_inference/{project}/input/annot_gt"
+    input_gt = f"data/yolov4_inference/{project}/input/gt_images_txts"
     images_ext = 'jpg'
 
     config_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom.cfg"
     weight_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
     meta_path = f"data/yolov4_inference/{project}/input/cfg/obj.data"
     class_names_path = f"data/yolov4_inference/{project}/input/cfg/obj.names"
-    threshold = 0.7
-    hier_thresh = 0.4
-    nms_coeff = 0.4
+    threshold = 0.6
+    hier_thresh = 0.3
+    nms_coeff = 0.3
 
     output_annot_dir = f"data/yolov4_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
     output_images_vis_dir = f"data/yolov4_inference/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
 
-    inference(input_images,
-              input_annot,
+    inference(input_gt,
               output_annot_dir,
               output_images_vis_dir,
               config_path, weight_path,

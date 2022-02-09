@@ -7,12 +7,14 @@ from tqdm import tqdm
 from my_utils import get_all_files_in_folder
 from map import mean_average_precision
 
-gt_input_dir = "data/compare_torch_tensorrt/input/gt_images_txts"
-pred_input_dir = "data/compare_torch_tensorrt/input/pred_txts/YOLOV5_FP16"
+project = "attributes"
+
+gt_input_dir = f"data/compare_torch_tensorrt/input/{project}/gt_images_txts"
+pred_input_dir = f"data/compare_torch_tensorrt/input/{project}/pred_txts/YOLOV5_FP16"
 image_ext = "jpg"
 
-num_classes = 1
-iou_threshold = 0.5
+num_classes = 11
+iou_threshold = 0.7
 
 gt_txts = get_all_files_in_folder(gt_input_dir, ["*.txt"])
 
