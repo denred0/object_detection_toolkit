@@ -24,6 +24,7 @@ def inference(input_gt: str,
               nms_coeff=0.5,
               images_ext='jpg',
               map_calc=False,
+              map_iou=0.5,
               verbose=False) -> [float, float, float]:
     #
     with open(class_names_path) as file:
@@ -117,7 +118,7 @@ def inference(input_gt: str,
                 map_image, precision_image, recall_image = mean_average_precision(pred_boxes=detections_result,
                                                                                   true_boxes=detections_gt,
                                                                                   num_classes=len(classes),
-                                                                                  iou_threshold=0.5)
+                                                                                  iou_threshold=map_iou)
                 map_images.append(map_image)
                 precision_images.append(precision_image)
                 recall_images.append(recall_image)
@@ -157,7 +158,7 @@ def inference(input_gt: str,
 
 
 if __name__ == '__main__':
-    project = "podrydchiki/attributes"
+    project = "podrydchiki/persons"
 
     input_gt = f"data/yolov4_inference/{project}/input/gt_images_txts"
     images_ext = 'jpg'
@@ -169,6 +170,7 @@ if __name__ == '__main__':
     threshold = 0.6
     hier_thresh = 0.3
     nms_coeff = 0.3
+    map_iou = 0.8
 
     output_annot_dir = f"data/yolov4_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
@@ -185,5 +187,6 @@ if __name__ == '__main__':
               hier_thresh,
               nms_coeff,
               images_ext,
-              map_calc=True,
+              map_calc=False,
+              map_iou=map_iou,
               verbose=True)

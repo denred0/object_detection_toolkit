@@ -16,11 +16,13 @@ def inference_yolov5(input_gt: str,
                      output_annot_dir: str,
                      output_images_vis_dir: str,
                      model_path: str,
+                     image_size: int,
                      class_names_path: str,
                      classes_inds: List,
                      threshold=0.5,
                      nms=0.5,
                      map_calc=True,
+                     map_iou=0.5,
                      verbose=True) -> [float, float, float]:
     #
     with open(class_names_path) as file:
@@ -48,7 +50,7 @@ def inference_yolov5(input_gt: str,
         h, w = img.shape[:2]
 
         start = time.time()
-        results = model(img)
+        results = model(img, size=image_size)
         detection_time += time.time() - start
         results_list = results.pandas().xyxy[0].values.tolist()
 
@@ -103,7 +105,7 @@ def inference_yolov5(input_gt: str,
                 map_image, precision_image, recall_image = mean_average_precision(pred_boxes=detections_result,
                                                                                   true_boxes=detections_gt,
                                                                                   num_classes=len(classes),
-                                                                                  iou_threshold=0.5)
+                                                                                  iou_threshold=map_iou)
                 map_images.append(map_image)
                 precision_images.append(precision_image)
                 recall_images.append(recall_image)
@@ -135,7 +137,7 @@ def inference_yolov5(input_gt: str,
 
         # recall - находим все объекты (уменьшаем FN)
         print(f"Recall: {round(np.mean(recall_images), 4)}")
-        # print(map_images)
+        print(f"mAP IoU: {map_iou}")
 
         print(f"FPS: {round(len(images) / detection_time, 2)}")
 
@@ -143,17 +145,19 @@ def inference_yolov5(input_gt: str,
 
 
 if __name__ == '__main__':
-    project = "podrydchiki/attributes"
+    project = "podrydchiki/persons"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    model_path = f"data/yolov5_inference/{project}/input/cfg/best.pt"
+    model_path = f"yolov5/runs/train/exp8/weights/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
-    threshold = 0.7
+    threshold = 0.6
     nms = 0.3
     # classes_inds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     classes_inds = [0]
+    image_size = 640
+    map_iou = 0.8
 
     output_annot_dir = f"data/yolov5_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
@@ -165,9 +169,11 @@ if __name__ == '__main__':
                      output_annot_dir,
                      output_images_vis_dir,
                      model_path,
+                     image_size,
                      class_names_path,
                      classes_inds,
                      threshold,
                      nms,
-                     map_calc=True,
+                     map_calc=False,
+                     map_iou=map_iou,
                      verbose=True)

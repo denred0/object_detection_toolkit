@@ -14,7 +14,7 @@ pred_input_dir = f"data/compare_torch_tensorrt/input/{project}/pred_txts/YOLOV5_
 image_ext = "jpg"
 
 num_classes = 11
-iou_threshold = 0.7
+iou_threshold = 0.8
 
 gt_txts = get_all_files_in_folder(gt_input_dir, ["*.txt"])
 
