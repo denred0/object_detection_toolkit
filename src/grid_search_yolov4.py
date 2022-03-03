@@ -79,12 +79,15 @@ for th in thresholds:
 
         if map > best_map:
             best_map_values = [th, nms, map, precision, recall]
+            best_map = map
 
         if precision > best_precision:
             best_precision_values = [th, nms, map, precision, recall]
+            best_precision = precision
 
         if recall > best_recall:
             best_recall_values = [th, nms, map, precision, recall]
+            best_recall = recall
 
 results["--"] = "--"
 results[
