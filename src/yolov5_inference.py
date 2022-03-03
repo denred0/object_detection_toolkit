@@ -153,13 +153,13 @@ if __name__ == '__main__':
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    model_path = f"yolov5/runs/train/exp34/weights/best.pt"
+    model_path = f"yolov5/runs/train/exp37/weights/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
-    threshold = 0.7
+    threshold = 0.5
     nms = 0.6
     classes_inds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
     # classes_inds = [0]
-    image_size = 320
+    image_size = 256
     map_iou = 0.8
     map_calc = True
     save_output = True

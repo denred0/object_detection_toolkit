@@ -74,7 +74,6 @@ for th in thresholds:
 
         results[
             f'exp_{exp_number}'] = f"threshold: {th}, nms: {nms}, mAP: {map}, precision: {precision}, recall: {recall}"
-        print(f"mAP: {map}, precision: {precision}, recall: {recall}")
         exp_number += 1
 
         if map > best_map:
@@ -88,6 +87,9 @@ for th in thresholds:
         if recall > best_recall:
             best_recall_values = [th, nms, map, precision, recall]
             best_recall = recall
+
+        print(f"current: mAP: {map}, precision: {precision}, recall: {recall}")
+        print(f"best: mAP: {best_map}, precision: {best_precision}, recall: {best_recall}")
 
 results["--"] = "--"
 results[
