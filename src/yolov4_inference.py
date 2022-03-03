@@ -12,20 +12,21 @@ from my_darknet import load_network, detect_image
 from map import mean_average_precision
 
 
-def inference(input_gt: str,
-              output_annot_dir: str,
-              output_images_vis_dir: str,
-              config_path: str,
-              weight_path: str,
-              meta_path: str,
-              class_names_path: str,
-              threshold=0.5,
-              hier_thresh=0.45,
-              nms_coeff=0.5,
-              images_ext='jpg',
-              map_calc=False,
-              map_iou=0.5,
-              verbose=False) -> [float, float, float]:
+def inference_yolov4(input_gt: str,
+                     output_annot_dir: str,
+                     output_images_vis_dir: str,
+                     config_path: str,
+                     weight_path: str,
+                     meta_path: str,
+                     class_names_path: str,
+                     threshold=0.5,
+                     hier_thresh=0.45,
+                     nms_coeff=0.5,
+                     images_ext='jpg',
+                     map_calc=False,
+                     map_iou=0.5,
+                     verbose=False,
+                     save_output=True) -> [float, float, float]:
     #
     with open(class_names_path) as file:
         classes = file.readlines()
@@ -133,13 +134,13 @@ def inference(input_gt: str,
 
                 img_orig = plot_one_box(img_orig, [int(x_top), int(y_top), int(x_bottom), int(y_bottom)], str(class_gt),
                                         color=(0, 255, 0))
+        if save_output:
+            with open(Path(output_annot_dir).joinpath(im.stem + '.txt'), 'w') as f:
+                for item in detections_result:
+                    f.write("%s\n" % (str(item[0]) + ' ' + str(item[2]) + ' ' + str(item[3]) + ' ' + str(
+                        item[4]) + ' ' + str(item[5])))
 
-        with open(Path(output_annot_dir).joinpath(im.stem + '.txt'), 'w') as f:
-            for item in detections_result:
-                f.write("%s\n" % (str(item[0]) + ' ' + str(item[2]) + ' ' + str(item[3]) + ' ' + str(
-                    item[4]) + ' ' + str(item[5])))
-
-        cv2.imwrite(str(Path(output_images_vis_dir).joinpath(im.name)), img_orig)
+            cv2.imwrite(str(Path(output_images_vis_dir).joinpath(im.name)), img_orig)
 
     if verbose:
         print(f"Images count: {len(images)}")
@@ -158,7 +159,8 @@ def inference(input_gt: str,
 
 
 if __name__ == '__main__':
-    project = "podrydchiki/persons"
+    # project = "podrydchiki/persons"
+    project = "door_smoke"
 
     input_gt = f"data/yolov4_inference/{project}/input/gt_images_txts"
     images_ext = 'jpg'
@@ -171,22 +173,24 @@ if __name__ == '__main__':
     hier_thresh = 0.3
     nms_coeff = 0.3
     map_iou = 0.8
+    save_output = True
 
     output_annot_dir = f"data/yolov4_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
     output_images_vis_dir = f"data/yolov4_inference/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
 
-    inference(input_gt,
-              output_annot_dir,
-              output_images_vis_dir,
-              config_path, weight_path,
-              meta_path,
-              class_names_path,
-              threshold,
-              hier_thresh,
-              nms_coeff,
-              images_ext,
-              map_calc=False,
-              map_iou=map_iou,
-              verbose=True)
+    inference_yolov4(input_gt,
+                     output_annot_dir,
+                     output_images_vis_dir,
+                     config_path, weight_path,
+                     meta_path,
+                     class_names_path,
+                     threshold,
+                     hier_thresh,
+                     nms_coeff,
+                     images_ext,
+                     map_calc=False,
+                     map_iou=map_iou,
+                     verbose=True,
+                     save_output=save_output)

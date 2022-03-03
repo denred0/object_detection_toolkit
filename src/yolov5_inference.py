@@ -23,7 +23,8 @@ def inference_yolov5(input_gt: str,
                      nms=0.5,
                      map_calc=True,
                      map_iou=0.5,
-                     verbose=True) -> [float, float, float]:
+                     verbose=True,
+                     save_output=True) -> [float, float, float]:
     #
     with open(class_names_path) as file:
         classes = file.readlines()
@@ -121,12 +122,13 @@ def inference_yolov5(input_gt: str,
                 img_orig = plot_one_box(img_orig, [int(x_top), int(y_top), int(x_bottom), int(y_bottom)], str(class_gt),
                                         color=(0, 255, 0))
 
-        with open(Path(output_annot_dir).joinpath(im.stem + '.txt'), 'w') as f:
-            for item in detections_result:
-                f.write("%s\n" % (str(item[0]) + ' ' + str(item[2]) + ' ' + str(item[3]) + ' ' + str(
-                    item[4]) + ' ' + str(item[5])))
+        if save_output:
+            with open(Path(output_annot_dir).joinpath(im.stem + '.txt'), 'w') as f:
+                for item in detections_result:
+                    f.write("%s\n" % (str(item[0]) + ' ' + str(item[2]) + ' ' + str(item[3]) + ' ' + str(
+                        item[4]) + ' ' + str(item[5])))
 
-        cv2.imwrite(str(Path(output_images_vis_dir).joinpath(im.name)), img_orig)
+            cv2.imwrite(str(Path(output_images_vis_dir).joinpath(im.name)), img_orig)
 
     if verbose:
         print(f"Images count: {len(images)}")
@@ -145,19 +147,22 @@ def inference_yolov5(input_gt: str,
 
 
 if __name__ == '__main__':
-    project = "podrydchiki/persons"
+    # project = "podrydchiki/persons"
+    project = "podrydchiki/attributes"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    model_path = f"yolov5/runs/train/exp8/weights/best.pt"
+    model_path = f"yolov5/runs/train/exp34/weights/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
-    threshold = 0.6
-    nms = 0.3
-    # classes_inds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    classes_inds = [0]
-    image_size = 640
+    threshold = 0.7
+    nms = 0.6
+    classes_inds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    # classes_inds = [0]
+    image_size = 320
     map_iou = 0.8
+    map_calc = True
+    save_output = True
 
     output_annot_dir = f"data/yolov5_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
@@ -174,6 +179,7 @@ if __name__ == '__main__':
                      classes_inds,
                      threshold,
                      nms,
-                     map_calc=False,
+                     map_calc=map_calc,
                      map_iou=map_iou,
-                     verbose=True)
+                     verbose=True,
+                     save_output=save_output)
