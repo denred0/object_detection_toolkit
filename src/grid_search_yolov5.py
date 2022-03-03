@@ -1,12 +1,19 @@
-from tqdm import tqdm
+import os
+import datetime
+import time
+
+from pathlib import Path
 
 from yolov5_inference import inference_yolov5
-from my_utils import recreate_folder
 
 project = "podrydchiki/attributes"
 
 input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
 image_ext = 'jpg'
+
+output_folder = f"data/grid_search/yolov5/{project}"
+if not Path(output_folder).exists():
+    Path(output_folder).mkdir(parents=True, exist_ok=True)
 
 model_path = f"yolov5/runs/train/exp34/weights/best.pt"
 class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
@@ -24,9 +31,9 @@ results = {}
 results['project'] = project
 results['config'] = model_path
 results['weight'] = model_path
-results['obj'] = ""
+results['obj'] = "--//--"
 results['names'] = class_names_path
-results['-- '] = "--"
+results['-1- '] = "-1-"
 
 best_map = 0.0
 best_map_values = [0, 0, 0, 0, 0]
@@ -35,9 +42,11 @@ best_precision_values = [0, 0, 0, 0, 0]
 best_recall = 0.0
 best_recall_values = [0, 0, 0, 0, 0]
 
-exp_number = 0
-thresholds = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+exp_number = 1
+thresholds = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 nmses = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+# thresholds = [0.3]
+# nmses = [0.3]
 exp_count = len(thresholds) * len(nmses)
 
 for th in thresholds:
@@ -62,6 +71,7 @@ for th in thresholds:
 
         results[
             f'exp_{exp_number}'] = f"threshold: {th}, nms: {nms}, mAP: {map}, precision: {precision}, recall: {recall}"
+        print(f"mAP: {map}, precision: {precision}, recall: {recall}")
         exp_number += 1
 
         if map > best_map:
@@ -73,7 +83,7 @@ for th in thresholds:
         if recall > best_recall:
             best_recall_values = [th, nms, map, precision, recall]
 
-results["-- "] = "--"
+results["-2- "] = "-2-"
 results[
     'best_map'] = f"threshold: {best_map_values[0]}, nms: {best_map_values[1]}, mAP: {best_map_values[2]}, precision: {best_map_values[3]}, recall: {best_map_values[4]}"
 
@@ -83,6 +93,7 @@ results[
 results[
     'best_recall'] = f"threshold: {best_recall_values[0]}, nms: {best_recall_values[1]}, mAP: {best_recall_values[2]}, precision: {best_recall_values[3]}, recall: {best_recall_values[4]}"
 
-with open(f'data/grid_search/yolov5/{project}.txt', 'w') as f:
+timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S')
+with open(os.path.join(output_folder, f"grid_search_result_{timestamp}.txt"), 'w') as f:
     for key, value in results.items():
         f.write("%s\n" % (str(key) + ": " + str(value)))

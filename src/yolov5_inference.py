@@ -30,7 +30,7 @@ def inference_yolov5(input_gt: str,
         classes = file.readlines()
         classes = [d.replace("\n", "") for d in classes]
 
-    model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=True)
+    model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=False)
     model.conf = threshold
     model.iou = nms
     model.classes = classes_inds

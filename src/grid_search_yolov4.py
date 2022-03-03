@@ -1,4 +1,8 @@
-from tqdm import tqdm
+import os
+import datetime
+import time
+
+from pathlib import Path
 
 from yolov4_inference import inference_yolov4
 from my_utils import recreate_folder
@@ -6,6 +10,10 @@ from my_utils import recreate_folder
 project = "barrier_reef"
 
 input_images = f"data/yolov4_inference/{project}/input/gt_images_txts"
+
+output_folder = f"data/grid_search/yolov4/{project}"
+if not Path(output_folder).exists():
+    Path(output_folder).mkdir(parents=True, exist_ok=True)
 
 config_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom.cfg"
 weight_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
@@ -36,7 +44,7 @@ best_precision_values = [0, 0, 0, 0, 0]
 best_recall = 0.0
 best_recall_values = [0, 0, 0, 0, 0]
 
-exp_number = 0
+exp_number = 1
 thresholds = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
 nmses = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 exp_count = len(thresholds) * len(nmses)
@@ -66,6 +74,7 @@ for th in thresholds:
 
         results[
             f'exp_{exp_number}'] = f"threshold: {th}, nms: {nms}, mAP: {map}, precision: {precision}, recall: {recall}"
+        print(f"mAP: {map}, precision: {precision}, recall: {recall}")
         exp_number += 1
 
         if map > best_map:
@@ -87,6 +96,7 @@ results[
 results[
     'best_recall'] = f"threshold: {best_recall_values[0]}, nms: {best_recall_values[1]}, mAP: {best_recall_values[2]}, precision: {best_recall_values[3]}, recall: {best_recall_values[4]}"
 
-with open(f'data/grid_search/yolov4/{project}.txt', 'w') as f:
+timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d_%H:%M:%S')
+with open(os.path.join(output_folder, f"grid_search_result_{timestamp}.txt"), 'w') as f:
     for key, value in results.items():
         f.write("%s\n" % (str(key) + ": " + str(value)))
