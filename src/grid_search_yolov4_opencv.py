@@ -41,7 +41,7 @@ def grid_search_yolov4_opencv(project,
     results['weight'] = weight_path
     results['obj'] = meta_path
     results['names'] = class_names_path
-    results['--'] = "--"
+    results['-1-'] = "--"
 
     for custom_input_size in custom_input_size_wh:
         for th in thresholds:
@@ -83,7 +83,7 @@ def grid_search_yolov4_opencv(project,
                 print(f"current: mAP: {map}, precision: {precision}, recall: {recall}")
                 print(f"best: mAP: {best_map}, precision: {best_precision}, recall: {best_recall}")
 
-    results["--"] = "--"
+    results["-2-"] = "--"
     results['best_map'] = f"threshold: {best_map_values[0]}, " \
                           f"nms: {best_map_values[1]}, " \
                           f"input_size: {best_map_values[2]} " \

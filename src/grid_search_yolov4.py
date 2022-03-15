@@ -35,7 +35,7 @@ results['config'] = config_path
 results['weight'] = weight_path
 results['obj'] = meta_path
 results['names'] = class_names_path
-results['--'] = "--"
+results['-1-'] = "--"
 
 best_map_values = best_precision_values = best_recall_values = [0, 0, (0, 0), 0, 0, 0]
 best_map = 0.0
@@ -93,7 +93,7 @@ for custom_in_size in custom_input_size_wh:
             print(f"current: mAP: {map}, precision: {precision}, recall: {recall}")
             print(f"best: mAP: {best_map}, precision: {best_precision}, recall: {best_recall}")
 
-results["--"] = "--"
+results["-2-"] = "--"
 results[
     'best_map'] = f"threshold: {best_map_values[0]}, nms: {best_map_values[1]}, in_size: {best_map_values[2]} mAP: {best_map_values[3]}, precision: {best_map_values[4]}, recall: {best_map_values[5]}"
 
