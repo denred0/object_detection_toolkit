@@ -58,7 +58,7 @@ def inference_yolov4_opencv(input_gt: str,
         detection_time += time.time() - start
         detections = []
         for cl, conf, boxes in zip(classes, confidences, boxes):
-            detections.append([class_names[cl], conf, boxes])
+            detections.append([class_names[cl.item()], conf, boxes])
 
         detections_result = []
 
