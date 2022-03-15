@@ -1,5 +1,5 @@
-import os
-import sys
+from typing import List
+
 import cv2
 import time
 import numpy as np
@@ -9,51 +9,34 @@ from pathlib import Path
 from my_utils import get_all_files_in_folder, recreate_folder, plot_one_box
 from collections import defaultdict
 
-from my_darknet import load_network, detect_image
 from map import mean_average_precision
 
 
-def inference_yolov4(input_gt: str,
-                     output_annot_dir: str,
-                     output_images_vis_dir: str,
-                     config_path: str,
-                     set_custom_input_size: bool,
-                     custom_input_size_wh: tuple,
-                     weight_path: str,
-                     meta_path: str,
-                     threshold=0.5,
-                     hier_thresh=0.45,
-                     nms_coeff=0.5,
-                     images_ext='jpg',
-                     map_calc=False,
-                     map_iou=0.5,
-                     verbose=False,
-                     save_output=True,
-                     draw_gt=True) -> [float, float, float]:
+def inference_yolov4_opencv(input_gt: str,
+                            output_annot_dir: str,
+                            output_images_vis_dir: str,
+                            config_path: str,
+                            class_names: List,
+                            custom_input_size_wh: tuple,
+                            weight_path: str,
+                            threshold=0.5,
+                            nms_coeff=0.5,
+                            images_ext='jpg',
+                            map_calc=False,
+                            map_iou=0.5,
+                            verbose=False,
+                            save_output=True,
+                            draw_gt=True) -> [float, float, float]:
     #
-    if set_custom_input_size:
-        with open(config_path) as file:
-            cfg_lines = [line.rstrip() for line in file]
+    net = cv2.dnn_DetectionModel(config_path, weight_path)
+    net.setInputSize(custom_input_size_wh)
+    net.setInputScale(1.0 / 255)
+    net.setInputSwapRB(True)
 
-        for id, line in enumerate(cfg_lines):
-            if "width" in line:
-                cfg_lines[id] = f"width={custom_input_size_wh[0]}"
-
-            if "height" in line:
-                cfg_lines[id] = f"height={custom_input_size_wh[1]}"
-
-        filepath = os.sep.join(config_path.split(os.sep)[:-1])
-        filename = config_path.split(os.sep)[-1].split(".")[0]
-
-        custom_config_path = os.path.join(filepath, filename + f"_input_size_{custom_input_size_wh}.cfg")
-        with open(custom_config_path, 'w') as f:
-            for item in cfg_lines:
-                f.write("%s\n" % item)
-
-        config_path = custom_config_path
-        print(f"Inference with custom input path {custom_input_size_wh}")
-
-    net_main, class_names, colors = load_network(config_path, meta_path, weight_path)
+    if cv2.cuda.getCudaEnabledDeviceCount():
+        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+        # net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA_FP16)
 
     images = get_all_files_in_folder(input_gt, [f"*.{images_ext}"])
 
@@ -68,33 +51,28 @@ def inference_yolov4(input_gt: str,
 
         img = cv2.imread(str(im), cv2.IMREAD_COLOR)
         img_orig = img.copy()
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         h, w = img.shape[:2]
         start = time.time()
-        detections = detect_image(net_main,
-                                  class_names,
-                                  img,
-                                  thresh=threshold,
-                                  hier_thresh=hier_thresh,
-                                  nms=nms_coeff)
+        classes, confidences, boxes = net.detect(img, confThreshold=threshold, nmsThreshold=nms_coeff)
         detection_time += time.time() - start
+        detections = []
+        for cl, conf, boxes in zip(classes, confidences, boxes):
+            detections.append([class_names[cl], conf, boxes])
 
         detections_result = []
 
-        detections_valid = [d for d in detections if float(d[1]) / 100 > threshold]
+        detections_valid = [d for d in detections if float(d[1]) > threshold]
 
         for i, detection in enumerate(detections_valid):
 
             current_class = detection[0]
-            # if current_class == "smoke":
-            #     print(im.name)
 
             current_thresh = float(detection[1])
             current_coords = [float(x) for x in detection[2]]
 
-            xmin = float(current_coords[0] - current_coords[2] / 2)
-            ymin = float(current_coords[1] - current_coords[3] / 2)
+            xmin = float(current_coords[0])
+            ymin = float(current_coords[1])
             xmax = float(xmin + current_coords[2])
             ymax = float(ymin + current_coords[3])
 
@@ -104,8 +82,8 @@ def inference_yolov4(input_gt: str,
             ymin = 0 if ymin < 0 else ymin
             ymax = h if ymax > h else ymax
 
-            x_center_norm = float(current_coords[0]) / w
-            y_center_norm = float(current_coords[1]) / h
+            x_center_norm = float(current_coords[0] + current_coords[2] / 2) / w
+            y_center_norm = float(current_coords[1] + current_coords[3] / 2) / h
             w_norm = float(current_coords[2]) / w
             h_norm = float(current_coords[3]) / h
 
@@ -115,7 +93,7 @@ def inference_yolov4(input_gt: str,
             detections_result.append(
                 [
                     class_names.index(current_class),
-                    round(current_thresh / 100, 2),
+                    round(current_thresh, 2),
                     x_center_norm,
                     y_center_norm,
                     w_norm,
@@ -123,7 +101,7 @@ def inference_yolov4(input_gt: str,
                 ])
 
             img_orig = plot_one_box(img_orig, [int(xmin), int(ymin), int(xmax), int(ymax)],
-                                    str(current_class + " " + str(round(current_thresh / 100, 2))), color=(255, 255, 0))
+                                    str(current_class + " " + str(round(current_thresh, 2))), color=(255, 255, 0))
 
         if map_calc:
             with open(Path(input_gt).joinpath(im.stem + ".txt")) as file:
@@ -193,46 +171,46 @@ def inference_yolov4(input_gt: str,
     return round(np.mean(map_images), 4), round(np.mean(precision_images), 4), round(np.mean(recall_images), 4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     project = "podrydchiki/persons"
     # project = "door_smoke"
 
-    input_gt = f"data/yolov4_inference/{project}/input/gt_images_txts"
+    input_gt = f"data/yolov4_inference_opencv/{project}/input/gt_images_txts"
     images_ext = 'jpg'
 
-    config_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom.cfg"
-    weight_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
-    meta_path = f"data/yolov4_inference/{project}/input/cfg/obj.data"
+    config_path = f"data/yolov4_inference_opencv/{project}/input/cfg/yolov4-obj-mycustom.cfg"
+    weight_path = f"data/yolov4_inference_opencv/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
+    meta_path = f"data/yolov4_inference_opencv/{project}/input/cfg/obj.data"
     threshold = 0.5
-    hier_thresh = 0.3
     nms_coeff = 0.3
     map_iou = 0.8
     map_calc = True
     save_output = True
     draw_gt = False
+    custom_input_size_wh = (416, 416)
 
-    set_custom_input_size = False
-    custom_input_size_wh = (640, 640)
+    class_names_path = f"data/yolov4_inference_opencv/{project}/input/cfg/obj.names"
+    with open(class_names_path) as file:
+        class_names = file.readlines()
+        class_names = [d.replace("\n", "") for d in class_names]
 
-    output_annot_dir = f"data/yolov4_inference/{project}/output/annot_pred"
+    output_annot_dir = f"data/yolov4_inference_opencv/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
-    output_images_vis_dir = f"data/yolov4_inference/{project}/output/images_vis"
+    output_images_vis_dir = f"data/yolov4_inference_opencv/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
 
-    inference_yolov4(input_gt,
-                     output_annot_dir,
-                     output_images_vis_dir,
-                     config_path,
-                     set_custom_input_size,
-                     custom_input_size_wh,
-                     weight_path,
-                     meta_path,
-                     threshold,
-                     hier_thresh,
-                     nms_coeff,
-                     images_ext,
-                     map_calc=map_calc,
-                     map_iou=map_iou,
-                     verbose=True,
-                     save_output=save_output,
-                     draw_gt=draw_gt)
+    inference_yolov4_opencv(input_gt,
+                            output_annot_dir,
+                            output_images_vis_dir,
+                            config_path,
+                            class_names,
+                            custom_input_size_wh,
+                            weight_path,
+                            threshold,
+                            nms_coeff,
+                            images_ext,
+                            map_calc=map_calc,
+                            map_iou=map_iou,
+                            verbose=True,
+                            save_output=save_output,
+                            draw_gt=draw_gt)

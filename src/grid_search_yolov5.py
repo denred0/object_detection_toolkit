@@ -15,11 +15,14 @@ output_folder = f"data/grid_search/yolov5/{project}"
 if not Path(output_folder).exists():
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-model_path = f"yolov5/runs/train/exp34/weights/best.pt"
+model_path = f"yolov5/runs/train/exp38/weights/best.pt"
 class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
-classes_inds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-# classes_inds = [0]
-image_size = 320
+with open(class_names_path) as file:
+    classes_names = file.readlines()
+    classes_names = [d.replace("\n", "") for d in classes_names]
+classes_inds = list(range(len(classes_names)))
+
+image_size = 256
 map_iou = 0.8
 map_calc = True
 save_output = False
@@ -35,12 +38,10 @@ results['obj'] = "--//--"
 results['names'] = class_names_path
 results['-1- '] = "-1-"
 
+best_map_values = best_precision_values = best_recall_values = [0, 0, 0, 0, 0]
 best_map = 0.0
-best_map_values = [0, 0, 0, 0, 0]
 best_precision = 0.0
-best_precision_values = [0, 0, 0, 0, 0]
 best_recall = 0.0
-best_recall_values = [0, 0, 0, 0, 0]
 
 exp_number = 1
 thresholds = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
@@ -60,7 +61,7 @@ for th in thresholds:
                                                   output_images_vis_dir,
                                                   model_path,
                                                   image_size,
-                                                  class_names_path,
+                                                  classes_names,
                                                   classes_inds,
                                                   threshold=th,
                                                   nms=nms,
@@ -88,7 +89,6 @@ for th in thresholds:
 
         print(f"current: mAP: {map}, precision: {precision}, recall: {recall}")
         print(f"best: mAP: {best_map}, precision: {best_precision}, recall: {best_recall}")
-
 
 results["-2- "] = "-2-"
 results[

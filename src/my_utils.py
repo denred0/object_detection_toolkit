@@ -127,13 +127,13 @@ def improve_brightness2():
         cv2.imwrite(os.path.join(output_foldet, im.name), img_edit)
 
 
-def plot_one_box(im, box, label=None, color=(255, 255, 0), line_thickness=1):
+def plot_one_box(im, box, label=None, color=(255, 255, 0), line_thickness=1, write_label=True):
     c1 = (box[0], box[1])
     c2 = (box[2], box[3])
 
     tl = line_thickness or round(0.001 * (im.shape[0] + im.shape[1]) / 2) + 1  # line/font thickness
     im = cv2.rectangle(im, c1, c2, color, thickness=tl, lineType=cv2.LINE_AA)
-    if label:
+    if label and write_label:
         tf = max(tl - 1, 1)  # font thickness
         t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
         c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3

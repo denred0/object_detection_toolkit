@@ -6,6 +6,7 @@ import torch
 from pathlib import Path
 from typing import List
 from tqdm import tqdm
+from collections import defaultdict
 
 from my_utils import recreate_folder, get_all_files_in_folder, plot_one_box
 from map import mean_average_precision
@@ -17,19 +18,16 @@ def inference_yolov5(input_gt: str,
                      output_images_vis_dir: str,
                      model_path: str,
                      image_size: int,
-                     class_names_path: str,
+                     classes_names: List,
                      classes_inds: List,
                      threshold=0.5,
                      nms=0.5,
                      map_calc=True,
                      map_iou=0.5,
                      verbose=True,
-                     save_output=True) -> [float, float, float]:
+                     save_output=True,
+                     draw_gt=True) -> [float, float, float]:
     #
-    with open(class_names_path) as file:
-        classes = file.readlines()
-        classes = [d.replace("\n", "") for d in classes]
-
     model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=False)
     model.conf = threshold
     model.iou = nms
@@ -38,6 +36,7 @@ def inference_yolov5(input_gt: str,
     images = get_all_files_in_folder(input_gt, [f"*.{image_ext}"])
 
     map_images = []
+    map_classes_total = defaultdict(list)
     precision_images = []
     recall_images = []
 
@@ -85,7 +84,7 @@ def inference_yolov5(input_gt: str,
 
             img_orig = plot_one_box(img_orig, [int(xmin), int(ymin), int(xmax), int(ymax)],
                                     str(res[6] + " " + str(round(res[4], 2))),
-                                    color=(255, 255, 0))
+                                    color=(255, 255, 0), write_label=False)
 
         if map_calc:
             with open(Path(input_gt).joinpath(im.stem + ".txt")) as file:
@@ -103,24 +102,30 @@ def inference_yolov5(input_gt: str,
                 precision_images.append(0)
                 recall_images.append(0)
             else:
-                map_image, precision_image, recall_image = mean_average_precision(pred_boxes=detections_result,
-                                                                                  true_boxes=detections_gt,
-                                                                                  num_classes=len(classes),
-                                                                                  iou_threshold=map_iou)
+                map_image, precision_image, recall_image, map_classes = mean_average_precision(
+                    pred_boxes=detections_result,
+                    true_boxes=detections_gt,
+                    num_classes=len(classes_names),
+                    iou_threshold=map_iou)
                 map_images.append(map_image)
                 precision_images.append(precision_image)
                 recall_images.append(recall_image)
 
-            for det_gt in detections_gt:
-                x_top = int((det_gt[1] - det_gt[3] / 2) * w)
-                y_top = int((det_gt[2] - det_gt[4] / 2) * h)
-                x_bottom = int((x_top + det_gt[3] * w))
-                y_bottom = int((y_top + det_gt[4] * h))
+                for cl, ap in map_classes.items():
+                    map_classes_total[cl].append(ap)
 
-                class_gt = classes[det_gt[0]]
+            if draw_gt:
+                for det_gt in detections_gt:
+                    x_top = int((det_gt[1] - det_gt[3] / 2) * w)
+                    y_top = int((det_gt[2] - det_gt[4] / 2) * h)
+                    x_bottom = int((x_top + det_gt[3] * w))
+                    y_bottom = int((y_top + det_gt[4] * h))
 
-                img_orig = plot_one_box(img_orig, [int(x_top), int(y_top), int(x_bottom), int(y_bottom)], str(class_gt),
-                                        color=(0, 255, 0))
+                    class_gt = classes_names[det_gt[0]]
+
+                    img_orig = plot_one_box(img_orig, [int(x_top), int(y_top), int(x_bottom), int(y_bottom)],
+                                            str(class_gt),
+                                            color=(0, 255, 0))
 
         if save_output:
             with open(Path(output_annot_dir).joinpath(im.stem + '.txt'), 'w') as f:
@@ -133,14 +138,17 @@ def inference_yolov5(input_gt: str,
     if verbose:
         print(f"Images count: {len(images)}")
         print(f"mAP: {round(np.mean(map_images), 4)}")
-
         # precision - не находим лишнее (уменьшаем FP)
         print(f"Precision: {round(np.mean(precision_images), 4)}")
-
         # recall - находим все объекты (уменьшаем FN)
         print(f"Recall: {round(np.mean(recall_images), 4)}")
-        print(f"mAP IoU: {map_iou}")
 
+        print()
+        for key, value in map_classes_total.items():
+            print(f"{classes_names[key]}: {round(sum(value) / len(value), 4)}")
+
+        print()
+        print(f"mAP IoU: {map_iou}")
         print(f"FPS: {round(len(images) / detection_time, 2)}")
 
     return round(np.mean(map_images), 4), round(np.mean(precision_images), 4), round(np.mean(recall_images), 4)
@@ -153,16 +161,20 @@ if __name__ == '__main__':
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    model_path = f"yolov5/runs/train/exp37/weights/best.pt"
+    model_path = f"yolov5/runs/train/exp39/weights/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
-    threshold = 0.5
-    nms = 0.6
-    classes_inds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-    # classes_inds = [0]
+    with open(class_names_path) as file:
+        classes_names = file.readlines()
+        classes_names = [d.replace("\n", "") for d in classes_names]
+    classes_inds = list(range(len(classes_names)))
+
+    threshold = 0.6
+    nms = 0.5
     image_size = 256
     map_iou = 0.8
     map_calc = True
     save_output = True
+    draw_gt = False
 
     output_annot_dir = f"data/yolov5_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
@@ -175,11 +187,12 @@ if __name__ == '__main__':
                      output_images_vis_dir,
                      model_path,
                      image_size,
-                     class_names_path,
+                     classes_names,
                      classes_inds,
                      threshold,
                      nms,
                      map_calc=map_calc,
                      map_iou=map_iou,
                      verbose=True,
-                     save_output=save_output)
+                     save_output=save_output,
+                     draw_gt=draw_gt)

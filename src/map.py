@@ -27,6 +27,8 @@ def mean_average_precision(
     # used for numerical stability later on
     epsilon = 1e-6
 
+    average_precisions_classes = {}
+
     for c in range(num_classes):
         detections = []
         ground_truths = []
@@ -90,12 +92,13 @@ def mean_average_precision(
         recalls = np.concatenate((np.zeros([1]), recalls))
         # np.trapz for numerical integration
         # находит площадь под треугольниками, не достраивая до прямоугольников
-        # чтобы была площадь под прямоугольником надо precisions[1:-1] = precisions[2:]
+        # чтобы была площадь под прямоугольником надо добавить precisions[1:-1] = precisions[2:]
         average_precisions.append(np.trapz(precisions, recalls))
+        average_precisions_classes[c] = np.trapz(precisions, recalls)
 
     return round(sum(average_precisions) / len(average_precisions), 4), \
            round(np.mean(precisions), 4),\
-           round(np.mean(recalls), 4)
+           round(np.mean(recalls), 4), average_precisions_classes
 
 
 if __name__ == "__main__":
