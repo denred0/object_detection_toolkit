@@ -3,23 +3,24 @@ import datetime
 import time
 
 from pathlib import Path
+from typing import List
 
 from yolov4_inference_opencv import inference_yolov4_opencv
 
 
-def grid_search_yolov4_opencv(project,
-                              input_images,
-                              output_folder,
-                              output_annot_dir,
-                              output_images_vis_dir,
-                              config_path,
-                              meta_path,
-                              weight_path,
-                              class_names_path,
-                              class_names,
-                              images_ext,
-                              map_iou,
-                              save_output):
+def grid_search_yolov4_opencv(project: str,
+                              input_images: str,
+                              output_folder: str,
+                              output_annot_dir: str,
+                              output_images_vis_dir: str,
+                              config_path: str,
+                              meta_path: str,
+                              weight_path: str,
+                              class_names_path: str,
+                              class_names: List,
+                              images_ext: str,
+                              map_iou: float,
+                              save_output: bool):
     #
 
     best_map_values = best_precision_values = best_recall_values = [0, 0, (0, 0), 0, 0, 0]
@@ -116,6 +117,8 @@ if __name__ == "__main__":
 
     input_images = f"data/yolov4_inference_opencv/{project}/input/gt_images_txts"
 
+    output_annot_dir = ""
+    output_images_vis_dir = ""
     output_folder = f"data/grid_search/yolov4_opencv/{project}"
     if not Path(output_folder).exists():
         Path(output_folder).mkdir(parents=True, exist_ok=True)
@@ -131,9 +134,6 @@ if __name__ == "__main__":
     images_ext = 'jpg'
     map_iou = 0.8
     save_output = False
-
-    output_annot_dir = ""
-    output_images_vis_dir = ""
 
     grid_search_yolov4_opencv(project,
                               input_images,
