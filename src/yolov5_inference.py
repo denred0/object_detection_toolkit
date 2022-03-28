@@ -155,24 +155,25 @@ def inference_yolov5(input_gt: str,
 
 
 if __name__ == '__main__':
-    # project = "podrydchiki/persons"
-    project = "podrydchiki/attributes"
+    project = "podrydchiki/persons"
+    # project = "podrydchiki/attributes"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    model_path = f"yolov5/runs/train/exp39/weights/best.pt"
+    model_path = f"yolov5/runs/train/exp29/weights/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
     with open(class_names_path) as file:
         classes_names = file.readlines()
         classes_names = [d.replace("\n", "") for d in classes_names]
     classes_inds = list(range(len(classes_names)))
 
-    threshold = 0.6
+    threshold = 0.5
     nms = 0.5
-    image_size = 256
+    # image_size = 256
+    image_size = 640
     map_iou = 0.8
-    map_calc = True
+    map_calc = False
     save_output = True
     draw_gt = False
 

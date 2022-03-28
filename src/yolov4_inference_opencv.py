@@ -181,10 +181,10 @@ if __name__ == "__main__":
     config_path = f"data/yolov4_inference_opencv/{project}/input/cfg/yolov4-obj-mycustom.cfg"
     weight_path = f"data/yolov4_inference_opencv/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
     meta_path = f"data/yolov4_inference_opencv/{project}/input/cfg/obj.data"
-    threshold = 0.5
-    nms_coeff = 0.3
+    threshold = 0.8
+    nms_coeff = 0.4
     map_iou = 0.8
-    map_calc = True
+    map_calc = False
     save_output = True
     draw_gt = False
     custom_input_size_wh = (416, 416)
