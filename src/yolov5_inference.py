@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import cv2
+import os
 import torch
 
 from pathlib import Path
@@ -16,6 +17,7 @@ def inference_yolov5(input_gt: str,
                      image_ext: str,
                      output_annot_dir: str,
                      output_images_vis_dir: str,
+                     output_crops_path: str,
                      model_path: str,
                      image_size: int,
                      classes_names: List,
@@ -26,7 +28,9 @@ def inference_yolov5(input_gt: str,
                      map_iou=0.5,
                      verbose=True,
                      save_output=True,
-                     draw_gt=True) -> [float, float, float]:
+                     draw_gt=True,
+                     draw_predictions=True,
+                     save_crops=True) -> [float, float, float]:
     #
     model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=False)
     model.conf = threshold
@@ -44,7 +48,7 @@ def inference_yolov5(input_gt: str,
 
     for im in tqdm(images):
 
-        img = cv2.imread(str(im), cv2.IMREAD_COLOR)
+        img = cv2.imread(str(im))
         img_orig = img.copy()
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         h, w = img.shape[:2]
@@ -58,7 +62,7 @@ def inference_yolov5(input_gt: str,
 
         detections_valid = [d for d in results_list if float(d[4]) > threshold]
 
-        for res in detections_valid:
+        for ind, res in enumerate(detections_valid):
             (xmin, ymin) = (res[0], res[1])
             (xmax, ymax) = (res[2], res[3])
             width = xmax - xmin
@@ -82,9 +86,22 @@ def inference_yolov5(input_gt: str,
                     h_norm
                 ])
 
-            img_orig = plot_one_box(img_orig, [int(xmin), int(ymin), int(xmax), int(ymax)],
-                                    str(res[6] + " " + str(round(res[4], 2))),
-                                    color=(255, 255, 0), write_label=False)
+            if save_crops:
+                increase_coef = 0.2
+                width_crop = xmax - xmin
+                height_crop = ymax - ymin
+                xmin_ = int(xmin - width_crop * increase_coef) if int(xmin - width_crop * increase_coef) > 0 else 0
+                xmax_ = int(xmax + width_crop * increase_coef) if int(xmax + width_crop * increase_coef) < w else w
+                ymin_ = int(ymin - height_crop * increase_coef) if int(ymin - height_crop * increase_coef) > 0 else 0
+                ymax_ = int(ymax + height_crop * increase_coef) if int(ymax + height_crop * increase_coef) < h else h
+
+                person_crop_orig = img_orig[ymin_:ymax_, xmin_:xmax_, :]
+                cv2.imwrite(os.path.join(output_crops_path, f"{im.stem}_{ind}.{image_ext}"), person_crop_orig)
+
+            if draw_predictions:
+                img_orig = plot_one_box(img_orig, [int(xmin), int(ymin), int(xmax), int(ymax)],
+                                        str(res[6] + " " + str(round(res[4], 2))),
+                                        color=(255, 255, 0), write_label=False)
 
         if map_calc:
             with open(Path(input_gt).joinpath(im.stem + ".txt")) as file:
@@ -155,13 +172,17 @@ def inference_yolov5(input_gt: str,
 
 
 if __name__ == '__main__':
-    project = "podrydchiki/persons"
-    # project = "podrydchiki/attributes"
+    # project = "evraz/persons"
+    # project = "podrydchiki/persons"
+    project = "podrydchiki/attributes"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    model_path = f"yolov5/runs/train/exp29/weights/best.pt"
+    # model_path = f"yolov5/runs/train/podrydchiki/person/exp/weights/best.pt"
+    # model_path = f"yolov5/runs/train/exp8/weights/last.pt"
+    # model_path = f"data/yolov5_inference/podrydchiki/attributes/input/cfg/best.pt"
+    model_path = f"yolov5/runs/train/podrydchiki/attr/exp3/weights/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
     with open(class_names_path) as file:
         classes_names = file.readlines()
@@ -170,22 +191,29 @@ if __name__ == '__main__':
 
     threshold = 0.5
     nms = 0.5
-    # image_size = 256
-    image_size = 640
+    image_size = 256
+    # image_size = 640
     map_iou = 0.8
-    map_calc = False
+    map_calc = True
     save_output = True
     draw_gt = False
+    draw_predictions = True
+    save_crops = False
 
     output_annot_dir = f"data/yolov5_inference/{project}/output/annot_pred"
     recreate_folder(output_annot_dir)
     output_images_vis_dir = f"data/yolov5_inference/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
 
+    output_crops_path = f"data/yolov5_inference/{project}/output/crops"
+    if save_crops:
+        recreate_folder(output_crops_path)
+
     inference_yolov5(input_gt,
                      image_ext,
                      output_annot_dir,
                      output_images_vis_dir,
+                     output_crops_path,
                      model_path,
                      image_size,
                      classes_names,
@@ -196,4 +224,6 @@ if __name__ == '__main__':
                      map_iou=map_iou,
                      verbose=True,
                      save_output=save_output,
-                     draw_gt=draw_gt)
+                     draw_gt=draw_gt,
+                     draw_predictions=draw_predictions,
+                     save_crops=save_crops)

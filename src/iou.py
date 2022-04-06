@@ -93,7 +93,10 @@ def intersection_over_union_box(box_pred, box_label, box_format="midpoint"):
     y2 = min(box1_y2, box2_y2)
 
     # Need clamp(0) in case they do not intersect, then we want intersection to be 0
-    intersection = np.clip(x2 - x1, 0, x2 - x1) * np.clip(y2 - y1, 0, y2 - y1)
+    if x2 - x1 < 0 or y2 - y1 < 0:
+        return 0
+    else:
+        intersection = np.clip(x2 - x1, 0, x2 - x1) * np.clip(y2 - y1, 0, y2 - y1)
     box1_area = abs((box1_x2 - box1_x1) * (box1_y2 - box1_y1))
     box2_area = abs((box2_x2 - box2_x1) * (box2_y2 - box2_y1))
 

@@ -16,6 +16,7 @@ from map import mean_average_precision
 def inference_yolov4(input_gt: str,
                      output_annot_dir: str,
                      output_images_vis_dir: str,
+                     output_crops_path: str,
                      config_path: str,
                      set_custom_input_size: bool,
                      custom_input_size_wh: tuple,
@@ -29,7 +30,9 @@ def inference_yolov4(input_gt: str,
                      map_iou=0.5,
                      verbose=False,
                      save_output=True,
-                     draw_gt=True) -> [float, float, float]:
+                     draw_gt=True,
+                     draw_predictions=True,
+                     save_crops=True) -> [float, float, float]:
     #
     if set_custom_input_size:
         with open(config_path) as file:
@@ -81,10 +84,9 @@ def inference_yolov4(input_gt: str,
         detection_time += time.time() - start
 
         detections_result = []
-
         detections_valid = [d for d in detections if float(d[1]) / 100 > threshold]
 
-        for i, detection in enumerate(detections_valid):
+        for ind, detection in enumerate(detections_valid):
 
             current_class = detection[0]
             # if current_class == "smoke":
@@ -122,8 +124,22 @@ def inference_yolov4(input_gt: str,
                     h_norm
                 ])
 
-            img_orig = plot_one_box(img_orig, [int(xmin), int(ymin), int(xmax), int(ymax)],
-                                    str(current_class + " " + str(round(current_thresh / 100, 2))), color=(255, 255, 0))
+            if save_crops:
+                increase_coef = 0.2
+                width_crop = xmax - xmin
+                height_crop = ymax - ymin
+                xmin_ = int(xmin - width_crop * increase_coef) if int(xmin - width_crop * increase_coef) > 0 else 0
+                xmax_ = int(xmax + width_crop * increase_coef) if int(xmax + width_crop * increase_coef) < w else w
+                ymin_ = int(ymin - height_crop * increase_coef) if int(ymin - height_crop * increase_coef) > 0 else 0
+                ymax_ = int(ymax + height_crop * increase_coef) if int(ymax + height_crop * increase_coef) < h else h
+
+                person_crop_orig = img_orig[ymin_:ymax_, xmin_:xmax_, :]
+                cv2.imwrite(os.path.join(output_crops_path, f"{im.stem}_{ind}.{images_ext}"), person_crop_orig)
+
+            if draw_predictions:
+                img_orig = plot_one_box(img_orig, [int(xmin), int(ymin), int(xmax), int(ymax)],
+                                        str(current_class + " " + str(round(current_thresh / 100, 2))),
+                                        color=(255, 255, 0))
 
         if map_calc:
             with open(Path(input_gt).joinpath(im.stem + ".txt")) as file:
@@ -194,6 +210,7 @@ def inference_yolov4(input_gt: str,
 
 
 if __name__ == '__main__':
+    # project = "evraz/persons"
     project = "podrydchiki/persons"
     # project = "door_smoke"
 
@@ -203,13 +220,16 @@ if __name__ == '__main__':
     config_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom.cfg"
     weight_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
     meta_path = f"data/yolov4_inference/{project}/input/cfg/obj.data"
-    threshold = 0.7
+
+    threshold = 0.5
     hier_thresh = 0.3
-    nms_coeff = 0.4
+    nms_coeff = 0.5
     map_iou = 0.8
     map_calc = False
     save_output = True
     draw_gt = False
+    save_crops = True
+    draw_predictions = False
 
     set_custom_input_size = False
     custom_input_size_wh = (416, 416)
@@ -219,9 +239,14 @@ if __name__ == '__main__':
     output_images_vis_dir = f"data/yolov4_inference/{project}/output/images_vis"
     recreate_folder(output_images_vis_dir)
 
+    output_crops_path = f"data/yolov4_inference/{project}/output/crops"
+    if save_crops:
+        recreate_folder(output_crops_path)
+
     inference_yolov4(input_gt,
                      output_annot_dir,
                      output_images_vis_dir,
+                     output_crops_path,
                      config_path,
                      set_custom_input_size,
                      custom_input_size_wh,
@@ -235,4 +260,6 @@ if __name__ == '__main__':
                      map_iou=map_iou,
                      verbose=True,
                      save_output=save_output,
-                     draw_gt=draw_gt)
+                     draw_gt=draw_gt,
+                     draw_predictions=draw_predictions,
+                     save_crops=save_crops)
