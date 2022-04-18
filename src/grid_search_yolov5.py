@@ -14,6 +14,7 @@ def grid_search_yolov5(project: str,
                        output_folder: str,
                        output_annot_dir: str,
                        output_images_vis_dir: str,
+                       output_crops_path: str,
                        weight_path: str,
                        class_names_path: str,
                        classes_names: List,
@@ -52,6 +53,7 @@ def grid_search_yolov5(project: str,
                                                       image_ext,
                                                       output_annot_dir,
                                                       output_images_vis_dir,
+                                                      output_crops_path,
                                                       weight_path,
                                                       image_size,
                                                       classes_names,
@@ -81,7 +83,11 @@ def grid_search_yolov5(project: str,
                 best_recall = recall
 
             print(f"current: mAP: {map}, precision: {precision}, recall: {recall}")
-            print(f"best: mAP: {best_map}, precision: {best_precision}, recall: {best_recall}")
+            print(f"best: mAP: {best_map_values[2]}, "
+                  f"precision: {best_map_values[3]}, "
+                  f"recall: {best_map_values[4]}, "
+                  f"th: {best_map_values[0]}, "
+                  f"nms: {best_map_values[1]}")
 
     results["-2- "] = "-2-"
     results['best_map'] = f"threshold: {best_map_values[0]}, " \
@@ -109,27 +115,27 @@ def grid_search_yolov5(project: str,
 
 
 if __name__ == "__main__":
-    project = "podrydchiki/attributes"
+    # project = "podrydchiki/attributes"
+    project = "evraz/attr"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = 'jpg'
 
     output_annot_dir = ""
     output_images_vis_dir = ""
+    output_crops_path = ""
     output_folder = f"data/grid_search/yolov5/{project}"
     if not Path(output_folder).exists():
         Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-
-
-    weight_path = f"yolov5/runs/train/exp38/weights/best.pt"
+    weight_path = f"data/yolov5_inference/evraz/attr/input/cfg/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
     with open(class_names_path) as file:
         classes_names = file.readlines()
         classes_names = [d.replace("\n", "") for d in classes_names]
     classes_inds = list(range(len(classes_names)))
 
-    image_size = 256
+    image_size = 320
     map_iou = 0.8
     map_calc = True
     save_output = False
@@ -140,6 +146,7 @@ if __name__ == "__main__":
                        output_folder,
                        output_annot_dir,
                        output_images_vis_dir,
+                       output_crops_path,
                        weight_path,
                        class_names_path,
                        classes_names,

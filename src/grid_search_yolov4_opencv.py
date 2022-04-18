@@ -82,7 +82,11 @@ def grid_search_yolov4_opencv(project: str,
                     best_recall = recall
 
                 print(f"current: mAP: {map}, precision: {precision}, recall: {recall}")
-                print(f"best: mAP: {best_map}, precision: {best_precision}, recall: {best_recall}")
+                print(f"best: mAP: {best_map_values[2]}, "
+                      f"precision: {best_map_values[3]}, "
+                      f"recall: {best_map_values[4]}, "
+                      f"th: {best_map_values[0]}, "
+                      f"nms: {best_map_values[1]}")
 
     results["-2-"] = "--"
     results['best_map'] = f"threshold: {best_map_values[0]}, " \

@@ -211,8 +211,8 @@ def inference_yolov4(input_gt: str,
 
 if __name__ == '__main__':
     # project = "evraz/persons"
-    project = "podrydchiki/persons"
-    # project = "door_smoke"
+    # project = "podrydchiki/persons"
+    project = "door_smoke"
 
     input_gt = f"data/yolov4_inference/{project}/input/gt_images_txts"
     images_ext = 'jpg'
@@ -221,15 +221,15 @@ if __name__ == '__main__':
     weight_path = f"data/yolov4_inference/{project}/input/cfg/yolov4-obj-mycustom_best.weights"
     meta_path = f"data/yolov4_inference/{project}/input/cfg/obj.data"
 
-    threshold = 0.5
-    hier_thresh = 0.3
-    nms_coeff = 0.5
+    threshold = 0.6
+    hier_thresh = 0.4
+    nms_coeff = 0.4
     map_iou = 0.8
-    map_calc = False
+    map_calc = True
     save_output = True
     draw_gt = False
     save_crops = True
-    draw_predictions = False
+    draw_predictions = True
 
     set_custom_input_size = False
     custom_input_size_wh = (416, 416)

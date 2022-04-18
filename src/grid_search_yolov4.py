@@ -1,6 +1,8 @@
 import os
 import datetime
 import time
+from typing import List
+
 import torch
 
 from pathlib import Path
@@ -13,11 +15,14 @@ def grid_search_yolov4(project: str,
                        output_folder: str,
                        output_annot_dir: str,
                        output_images_vis_dir: str,
+                       output_crops_path: str,
                        config_path: str,
                        weight_path: str,
                        meta_path: str,
                        class_names_path: str,
                        hier_thresh: float,
+                       thresholds: List,
+                       nmses: List,
                        images_ext: str,
                        map_iou: float,
                        save_output: bool,
@@ -37,11 +42,10 @@ def grid_search_yolov4(project: str,
     best_recall = 0.0
 
     exp_number = 1
-    thresholds = [0.3, 0.4, 0.5]
-    nmses = [0.4, 0.5, 0.6]
+
     custom_input_size_wh = [(608, 608)]
-    thresholds = [0.5]
-    nmses = [0.4]
+    # thresholds = [0.5]
+    # nmses = [0.4]
 
     exp_count = len(thresholds) * len(nmses) * len(custom_input_size_wh)
 
@@ -54,6 +58,7 @@ def grid_search_yolov4(project: str,
                 map, precision, recall = inference_yolov4(input_images,
                                                           output_annot_dir,
                                                           output_images_vis_dir,
+                                                          output_crops_path,
                                                           config_path,
                                                           set_custom_input_size,
                                                           custom_input_size,
@@ -66,7 +71,8 @@ def grid_search_yolov4(project: str,
                                                           map_calc=True,
                                                           map_iou=map_iou,
                                                           verbose=False,
-                                                          save_output=save_output)
+                                                          save_output=save_output,
+                                                          save_crops=False)
 
                 results[
                     f'exp_{exp_number}'] = f"threshold: {th}, nms: {nms}, input_size: {custom_input_size}, mAP: {map}, precision: {precision}, recall: {recall}"
@@ -85,7 +91,11 @@ def grid_search_yolov4(project: str,
                     best_recall = recall
 
                 print(f"current: mAP: {map}, precision: {precision}, recall: {recall}")
-                print(f"best: mAP: {best_map}, precision: {best_precision}, recall: {best_recall}")
+                print(f"best: mAP: {best_map_values[2]}, "
+                      f"precision: {best_map_values[3]}, "
+                      f"recall: {best_map_values[4]}, "
+                      f"th: {best_map_values[0]}, "
+                      f"nms: {best_map_values[1]}")
 
     results["-2-"] = "--"
     results['best_map'] = f"threshold: {best_map_values[0]}, " \
@@ -116,12 +126,14 @@ def grid_search_yolov4(project: str,
 
 
 if __name__ == "__main__":
-    project = "podrydchiki/attributes"
+    # project = "podrydchiki/attributes"
+    project = "door_smoke"
 
     input_images = f"data/yolov4_inference/{project}/input/gt_images_txts"
 
     output_annot_dir = ""
     output_images_vis_dir = ""
+    output_crops_path = ""
     output_folder = f"data/grid_search/yolov4/{project}"
     if not Path(output_folder).exists():
         Path(output_folder).mkdir(parents=True, exist_ok=True)
@@ -134,18 +146,24 @@ if __name__ == "__main__":
     images_ext = 'jpg'
     map_iou = 0.8
     save_output = False
-    set_custom_input_size = True
+    set_custom_input_size = False
+
+    thresholds = [0.3, 0.4, 0.5, 0.6]
+    nmses = [0.4, 0.5, 0.6]
 
     grid_search_yolov4(project,
                        input_images,
                        output_folder,
                        output_annot_dir,
                        output_images_vis_dir,
+                       output_crops_path,
                        config_path,
                        weight_path,
                        meta_path,
                        class_names_path,
                        hier_thresh,
+                       thresholds,
+                       nmses,
                        images_ext,
                        map_iou,
                        save_output,

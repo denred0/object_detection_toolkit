@@ -172,9 +172,10 @@ def inference_yolov5(input_gt: str,
 
 
 if __name__ == '__main__':
-    # project = "evraz/persons"
+    # project = "evraz/attr"
+    project = "evraz/persons"
     # project = "podrydchiki/persons"
-    project = "podrydchiki/attributes"
+    # project = "podrydchiki/attributes"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
@@ -182,16 +183,17 @@ if __name__ == '__main__':
     # model_path = f"yolov5/runs/train/podrydchiki/person/exp/weights/best.pt"
     # model_path = f"yolov5/runs/train/exp8/weights/last.pt"
     # model_path = f"data/yolov5_inference/podrydchiki/attributes/input/cfg/best.pt"
-    model_path = f"yolov5/runs/train/podrydchiki/attr/exp3/weights/best.pt"
+    # model_path = f"yolov5/runs/train/podrydchiki/attr/exp3/weights/best.pt"
+    model_path = f"data/yolov5_inference/{project}/input/cfg/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
     with open(class_names_path) as file:
         classes_names = file.readlines()
         classes_names = [d.replace("\n", "") for d in classes_names]
     classes_inds = list(range(len(classes_names)))
 
-    threshold = 0.5
-    nms = 0.5
-    image_size = 256
+    threshold = 0.7
+    nms = 0.4
+    image_size = 640
     # image_size = 640
     map_iou = 0.8
     map_calc = True
