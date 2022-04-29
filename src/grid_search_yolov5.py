@@ -16,6 +16,8 @@ def grid_search_yolov5(project: str,
                        output_images_vis_dir: str,
                        output_crops_path: str,
                        weight_path: str,
+                       thresholds: List,
+                       nmses: List,
                        class_names_path: str,
                        classes_names: List,
                        classes_inds: List,
@@ -38,8 +40,7 @@ def grid_search_yolov5(project: str,
     best_recall = 0.0
 
     exp_number = 1
-    thresholds = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    nmses = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
     # thresholds = [0.3]
     # nmses = [0.3]
     exp_count = len(thresholds) * len(nmses)
@@ -116,7 +117,8 @@ def grid_search_yolov5(project: str,
 
 if __name__ == "__main__":
     # project = "podrydchiki/attributes"
-    project = "evraz/attr"
+    # project = "evraz/attr"
+    project = "rosatom/attr"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = 'jpg'
@@ -128,13 +130,15 @@ if __name__ == "__main__":
     if not Path(output_folder).exists():
         Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-    weight_path = f"data/yolov5_inference/evraz/attr/input/cfg/best.pt"
+    weight_path = f"data/yolov5_inference/{project}/input/cfg/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
     with open(class_names_path) as file:
         classes_names = file.readlines()
         classes_names = [d.replace("\n", "") for d in classes_names]
     classes_inds = list(range(len(classes_names)))
 
+    thresholds = [0.4, 0.5, 0.6, 0.7, 0.8]
+    nmses = [0.3, 0.4, 0.5, 0.6]
     image_size = 320
     map_iou = 0.8
     map_calc = True
@@ -148,6 +152,8 @@ if __name__ == "__main__":
                        output_images_vis_dir,
                        output_crops_path,
                        weight_path,
+                       thresholds,
+                       nmses,
                        class_names_path,
                        classes_names,
                        classes_inds,

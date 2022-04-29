@@ -159,6 +159,8 @@ def inference_yolov5(input_gt: str,
         print(f"Precision: {round(np.mean(precision_images), 4)}")
         # recall - находим все объекты (уменьшаем FN)
         print(f"Recall: {round(np.mean(recall_images), 4)}")
+        print(f"th: {threshold}")
+        print(f"nms: {nms}")
 
         print()
         for key, value in map_classes_total.items():
@@ -173,9 +175,12 @@ def inference_yolov5(input_gt: str,
 
 if __name__ == '__main__':
     # project = "evraz/attr"
-    project = "evraz/persons"
+    # project = "evraz/persons"
     # project = "podrydchiki/persons"
     # project = "podrydchiki/attributes"
+    # project = "gaz_door"
+    # project = "rosatom/persons"
+    project = "rosatom/attr"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
@@ -193,7 +198,7 @@ if __name__ == '__main__':
 
     threshold = 0.7
     nms = 0.4
-    image_size = 640
+    image_size = 320
     # image_size = 640
     map_iou = 0.8
     map_calc = True

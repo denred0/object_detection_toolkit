@@ -17,6 +17,9 @@ def grid_search_yolov4_opencv(project: str,
                               meta_path: str,
                               weight_path: str,
                               class_names_path: str,
+                              thresholds: List,
+                              nmses: List,
+                              custom_input_size_wh: List,
                               class_names: List,
                               images_ext: str,
                               map_iou: float,
@@ -29,11 +32,6 @@ def grid_search_yolov4_opencv(project: str,
     best_recall = 0.0
 
     exp_number = 1
-    thresholds = [0.4, 0.5]
-    nmses = [0.5, 0.6]
-    custom_input_size_wh = [(416, 416)]
-    # thresholds = [0.5]
-    # nmses = [0.4]
     exp_count = len(thresholds) * len(nmses) * len(custom_input_size_wh)
 
     results = {}
@@ -117,7 +115,8 @@ def grid_search_yolov4_opencv(project: str,
 
 
 if __name__ == "__main__":
-    project = "podrydchiki/persons"
+    # project = "podrydchiki/persons"
+    project = "gaz_door"
 
     input_images = f"data/yolov4_inference_opencv/{project}/input/gt_images_txts"
 
@@ -139,6 +138,10 @@ if __name__ == "__main__":
     map_iou = 0.8
     save_output = False
 
+    thresholds = [0.3, 0.4, 0.5, 0.6]
+    nmses = [0.4, 0.5, 0.6]
+    custom_input_size_wh = [(416, 416)]
+
     grid_search_yolov4_opencv(project,
                               input_images,
                               output_folder,
@@ -148,6 +151,9 @@ if __name__ == "__main__":
                               meta_path,
                               weight_path,
                               class_names_path,
+                              thresholds,
+                              nmses,
+                              custom_input_size_wh,
                               class_names,
                               images_ext,
                               map_iou,

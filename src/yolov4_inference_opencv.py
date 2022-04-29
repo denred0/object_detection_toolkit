@@ -187,6 +187,7 @@ if __name__ == "__main__":
     map_calc = False
     save_output = True
     draw_gt = False
+
     custom_input_size_wh = (416, 416)
 
     class_names_path = f"data/yolov4_inference_opencv/{project}/input/cfg/obj.names"
