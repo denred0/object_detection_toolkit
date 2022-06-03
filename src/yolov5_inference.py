@@ -30,7 +30,7 @@ def inference_yolov5(input_gt: str,
                      save_output=True,
                      draw_gt=True,
                      draw_predictions=True,
-                     save_crops=True) -> [float, float, float]:
+                     save_crops=False) -> [float, float, float]:
     #
     model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, force_reload=False)
     model.conf = threshold
@@ -181,23 +181,23 @@ if __name__ == '__main__':
     # project = "gaz_door"
     # project = "rosatom/persons"
     project = "rosatom/attr"
+    # project = "fitness/persons"
+    # project = "gpn/persons"
+    # project = "fifa/persons"
 
     input_gt = f"data/yolov5_inference/{project}/input/gt_images_txts"
     image_ext = "jpg"
 
-    # model_path = f"yolov5/runs/train/podrydchiki/person/exp/weights/best.pt"
-    # model_path = f"yolov5/runs/train/exp8/weights/last.pt"
-    # model_path = f"data/yolov5_inference/podrydchiki/attributes/input/cfg/best.pt"
-    # model_path = f"yolov5/runs/train/podrydchiki/attr/exp3/weights/best.pt"
     model_path = f"data/yolov5_inference/{project}/input/cfg/best.pt"
+    # model_path = "yolov5/runs/train/gpn/persons/exp2/weights/best.pt"
     class_names_path = f"data/yolov5_inference/{project}/input/cfg/obj.names"
     with open(class_names_path) as file:
         classes_names = file.readlines()
         classes_names = [d.replace("\n", "") for d in classes_names]
     classes_inds = list(range(len(classes_names)))
 
-    threshold = 0.7
-    nms = 0.4
+    threshold = 0.5
+    nms = 0.5
     image_size = 320
     # image_size = 640
     map_iou = 0.8

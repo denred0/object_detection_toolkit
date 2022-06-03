@@ -24,7 +24,8 @@ def grid_search_yolov5(project: str,
                        image_size: int,
                        map_iou: float,
                        map_calc: bool,
-                       save_output: bool) -> None:
+                       save_output: bool,
+                       save_crops: bool) -> None:
     #
     results = {}
     results['project'] = project
@@ -64,7 +65,8 @@ def grid_search_yolov5(project: str,
                                                       map_calc=map_calc,
                                                       map_iou=map_iou,
                                                       verbose=False,
-                                                      save_output=save_output)
+                                                      save_output=save_output,
+                                                      save_crops=save_crops)
 
             results[
                 f'exp_{exp_number}'] = f"threshold: {th}, nms: {nms}, mAP: {map}, precision: {precision}, recall: {recall}"
@@ -143,6 +145,7 @@ if __name__ == "__main__":
     map_iou = 0.8
     map_calc = True
     save_output = False
+    save_crops = False
 
     grid_search_yolov5(project,
                        input_gt,
@@ -160,4 +163,5 @@ if __name__ == "__main__":
                        image_size,
                        map_iou,
                        map_calc,
-                       save_output)
+                       save_output,
+                       save_crops)
